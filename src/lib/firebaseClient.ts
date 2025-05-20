@@ -11,9 +11,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+console.log('Firebase Config:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+  hasStorageBucket: !!firebaseConfig.storageBucket,
+  hasMessagingSenderId: !!firebaseConfig.messagingSenderId,
+  hasAppId: !!firebaseConfig.appId
+});
+
 // Initialize Firebase only if it hasn't been initialized already
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+console.log('Firebase Apps:', getApps().length);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+console.log('Firebase initialized:', !!app, !!auth, !!db);
 
 export { app, auth, db }; 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebaseClient';
 import { FirebaseError } from 'firebase/app';
 import { 
@@ -18,10 +18,16 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+  useEffect(() => {
+    console.log('Auth page mounted');
+    console.log('Auth instance:', !!auth);
+  }, []);
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
+      console.log('Attempting auth with:', { email, isSignUp });
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
@@ -29,6 +35,7 @@ export default function AuthPage() {
       }
       router.push('/');
     } catch (err) {
+      console.error('Auth error:', err);
       setError((err as FirebaseError).message);
     }
   };
