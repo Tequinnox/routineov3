@@ -3,14 +3,24 @@
 import { useUser } from "@/hooks/useUser";
 import AuthGuard from "@/components/AuthGuard";
 import { useItems } from "@/hooks/useItems";
+import { useDailyReset } from "@/hooks/useDailyReset";
 import { ItemCard } from "@/components/ItemCard";
 import { auth } from "@/lib/firebaseClient";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { user, loading: userLoading } = useUser();
-  const { items, loading: itemsLoading, error, toggleItem } = useItems(user?.uid || '');
+  const [key, setKey] = useState(0); // Add a key to force re-render
+  const { items, loading: itemsLoading, error: itemsError, toggleItem } = useItems(user?.uid || '');
+  const { isChecking: isResetting, error: resetError } = useDailyReset({
+    userId: user?.uid || '',
+    onReset: () => {
+      // Force a re-render of the items list
+      setKey(prev => prev + 1);
+    }
+  });
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -22,7 +32,7 @@ export default function Home() {
     }
   };
 
-  if (userLoading || itemsLoading) {
+  if (userLoading || itemsLoading || isResetting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
@@ -30,10 +40,10 @@ export default function Home() {
     );
   }
 
-  if (error) {
+  if (itemsError || resetError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-red-500">Error: {itemsError || resetError}</div>
       </div>
     );
   }
