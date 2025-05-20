@@ -4,10 +4,28 @@ import Image from "next/image";
 import { app } from "@/lib/firebaseClient";
 import { useUser } from "@/hooks/useUser";
 import AuthGuard from "@/components/AuthGuard";
+import { createItem } from "@/services/items";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useUser();
   const isFirebaseInitialized = app?.options?.projectId ? true : false;
+
+  const handleCreateTestItem = async () => {
+    if (!user) return;
+    try {
+      await createItem({
+        name: "Test Routine Item",
+        part_of_day: "morning",
+        day_of_week: ["Monday", "Tuesday"],
+        order: 1,
+        user_id: user.uid
+      });
+      alert("Test item created!");
+    } catch (error) {
+      console.error("Error creating item:", error);
+      alert("Error creating item");
+    }
+  };
 
   return (
     <AuthGuard>
@@ -21,6 +39,12 @@ export default function Home() {
             {isAuthenticated ? `Logged in as: ${user?.email}` : "Not logged in"}
           </div>
         )}
+        <button
+          onClick={handleCreateTestItem}
+          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          Create Test Item
+        </button>
         <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
           <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
             <Image
