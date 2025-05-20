@@ -5,7 +5,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { db } from '@/lib/firebaseClient';
 import { RoutineItem } from '@/components/ItemCard';
 
-export function useItems(userId: string) {
+export function useItems(userId: string, showAllItems: boolean = false) {
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function useItems(userId: string) {
     const itemsQuery = query(
       collection(db, 'items'),
       where('user_id', '==', userId),
-      where('day_of_week', 'array-contains', today)
+      ...(showAllItems ? [] : [where('day_of_week', 'array-contains', today)])
     );
 
     const unsubscribe = onSnapshot(
@@ -38,7 +38,7 @@ export function useItems(userId: string) {
     );
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, showAllItems]);
 
   const toggleItem = async (itemId: string, checked: boolean) => {
     try {

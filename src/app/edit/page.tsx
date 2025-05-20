@@ -95,7 +95,7 @@ const ItemForm = ({
 
 export default function EditPage() {
   const { user } = useUser();
-  const { items, loading, error: itemsError } = useItems(user?.uid || '');
+  const { items, loading, error: itemsError } = useItems(user?.uid || '', true);
   const [name, setName] = useState('');
   const [partOfDay, setPartOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([...DAYS_OF_WEEK]);
