@@ -5,9 +5,12 @@ import { app } from "@/lib/firebaseClient";
 import { useUser } from "@/hooks/useUser";
 import AuthGuard from "@/components/AuthGuard";
 import { createItem } from "@/services/items";
+import { updateUserSettings, getUserSettings } from "@/services/settings";
+import { useState } from "react";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useUser();
+  const [settings, setSettings] = useState<string | null>(null);
   const isFirebaseInitialized = app?.options?.projectId ? true : false;
 
   const handleCreateTestItem = async () => {
@@ -27,6 +30,19 @@ export default function Home() {
     }
   };
 
+  const handleUpdateSettings = async () => {
+    if (!user) return;
+    try {
+      await updateUserSettings(user.uid, { reset_time: "06:00" });
+      const updatedSettings = await getUserSettings(user.uid);
+      setSettings(updatedSettings?.reset_time || null);
+      alert("Settings updated!");
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      alert("Error updating settings");
+    }
+  };
+
   return (
     <AuthGuard>
       <>
@@ -39,12 +55,25 @@ export default function Home() {
             {isAuthenticated ? `Logged in as: ${user?.email}` : "Not logged in"}
           </div>
         )}
-        <button
-          onClick={handleCreateTestItem}
-          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-        >
-          Create Test Item
-        </button>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={handleCreateTestItem}
+            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+          >
+            Create Test Item
+          </button>
+          <button
+            onClick={handleUpdateSettings}
+            className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
+          >
+            Set Reset Time
+          </button>
+        </div>
+        {settings && (
+          <div className="bg-indigo-500 text-white p-2 text-center">
+            Reset time set to: {settings}
+          </div>
+        )}
         <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
           <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
             <Image
