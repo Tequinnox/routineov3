@@ -1,8 +1,11 @@
+'use client';
+
 import Image from "next/image";
 import { app } from "@/lib/firebaseClient";
+import { useUser } from "@/hooks/useUser";
 
 export default function Home() {
-  // Test Firebase initialization
+  const { user, loading, isAuthenticated } = useUser();
   const isFirebaseInitialized = app?.options?.projectId ? true : false;
 
   return (
@@ -11,6 +14,11 @@ export default function Home() {
       <div className="bg-green-500 text-white p-2 text-center">
         Firebase initialization: {isFirebaseInitialized ? "✅" : "❌"}
       </div>
+      {!loading && (
+        <div className="bg-purple-500 text-white p-2 text-center">
+          {isAuthenticated ? `Logged in as: ${user?.email}` : "Not logged in"}
+        </div>
+      )}
       <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
         <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
           <Image
