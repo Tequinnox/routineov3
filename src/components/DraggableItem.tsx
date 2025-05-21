@@ -57,13 +57,6 @@ export function DraggableItem({ item, onEdit, onDelete, isSubmitting }: Draggabl
         </button>
         <div className="flex-1">
           <div className="font-medium">{item.name}</div>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {item.day_of_week.map((d) => (
-              <span key={d} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                {d.slice(0, 3)}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
       <div className="flex gap-2 ml-4">
