@@ -7,6 +7,13 @@ import { useItems } from '@/hooks/useItems';
 import { ItemCard, type RoutineItem } from '@/components/ItemCard';
 import AuthGuard from '@/components/AuthGuard';
 import { useDailyReset } from '@/hooks/useDailyReset';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -22,8 +29,10 @@ export default function Home() {
 
   if (loading || itemsLoading || isResetting) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-3xl mx-auto">Loading...</div>
+      <div className="min-h-screen bg-gray-50 pt-16 px-4">
+        <div className="max-w-md mx-auto flex items-center justify-center h-[calc(100vh-8rem)]">
+          <div className="text-sm text-gray-500">Loading...</div>
+        </div>
       </div>
     );
   }
@@ -43,38 +52,55 @@ export default function Home() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-3xl mx-auto space-y-6">
+      <div className="min-h-screen bg-gray-50 pt-16 px-4">
+        <div className="max-w-md mx-auto space-y-4">
           {itemsError && (
-            <div className="p-3 bg-red-100 text-red-700 rounded">
+            <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
               {itemsError}
             </div>
           )}
 
           {items.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              No items for today. Add some in the Edit tab!
-            </div>
-          ) : (
-            partsOfDay.map(part => (
-              <div key={part} className="space-y-2">
-                <h2 className="text-lg font-semibold capitalize">{part}</h2>
-                <div className="space-y-2">
-                  {groupedItems[part]?.map(item => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      onToggle={toggleItem}
-                    />
-                  ))}
-                  {!groupedItems[part]?.length && (
-                    <div className="text-center text-gray-500 py-2">
-                      No {part} items
-                    </div>
-                  )}
+            <Card className="bg-white">
+              <CardContent className="pt-6">
+                <div className="text-center text-gray-500 text-sm">
+                  No items for today. Add some in the Edit tab!
                 </div>
-              </div>
-            ))
+              </CardContent>
+            </Card>
+          ) : (
+            <Accordion type="multiple" className="space-y-4">
+              {partsOfDay.map(part => (
+                <AccordionItem
+                  key={part}
+                  value={part}
+                  className="bg-white rounded-lg border px-4"
+                >
+                  <AccordionTrigger className="py-3 text-base font-medium capitalize hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <span>{part}</span>
+                      <span className="text-sm text-gray-500">
+                        ({groupedItems[part]?.length || 0})
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pb-3">
+                    {groupedItems[part]?.map(item => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        onToggle={toggleItem}
+                      />
+                    ))}
+                    {!groupedItems[part]?.length && (
+                      <div className="text-center text-gray-500 text-sm py-2">
+                        No {part} items
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           )}
         </div>
       </div>
