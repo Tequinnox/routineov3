@@ -4,10 +4,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+type PartOfDay = 'morning' | 'afternoon' | 'evening';
+
 export type RoutineItem = {
   id: string;
   name: string;
-  part_of_day: 'morning' | 'afternoon' | 'evening';
+  part_of_day: PartOfDay[];
   is_checked: boolean;
 };
 
@@ -18,7 +20,10 @@ interface ItemCardProps {
 
 export function ItemCard({ item, onToggle }: ItemCardProps) {
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
+    <Card className={cn(
+      "p-4 transition-colors",
+      item.is_checked && "bg-gray-50"
+    )}>
       <div className="flex items-center gap-3">
         <Checkbox
           id={item.id}

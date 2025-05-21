@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from 'next/navigation';
 import { useItems } from '@/hooks/useItems';
@@ -15,11 +15,57 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+type PartOfDay = 'morning' | 'afternoon' | 'evening';
+
+interface ExtendedRoutineItem {
+  id: string;
+  name: string;
+  part_of_day: PartOfDay[];
+  is_checked: boolean;
+  day_of_week: DayOfWeek[];
+  order?: number;
+  user_id: string;
+}
+
+const PARTS_OF_DAY: PartOfDay[] = ['morning', 'afternoon', 'evening'];
+
 export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
-  const { items, loading: itemsLoading, error: itemsError, toggleItem } = useItems(user?.uid || '');
+  const { items: rawItems, loading: itemsLoading, error: itemsError, toggleItem } = useItems(user?.uid || '');
   const { isChecking: isResetting } = useDailyReset({ userId: user?.uid || '' });
+
+  // Cast items to ExtendedRoutineItem[] and sort by order
+  const items = useMemo(() => {
+    const typedItems = rawItems as ExtendedRoutineItem[];
+    return [...typedItems].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [rawItems]);
+
+  // Group items by part of day
+  const groupedItems = useMemo(() => {
+    const grouped = {
+      morning: [] as ExtendedRoutineItem[],
+      afternoon: [] as ExtendedRoutineItem[],
+      evening: [] as ExtendedRoutineItem[]
+    };
+
+    items.forEach(item => {
+      const parts = Array.isArray(item.part_of_day)
+        ? item.part_of_day
+        : typeof item.part_of_day === 'string'
+          ? [item.part_of_day]
+          : [];
+      
+      parts.forEach(part => {
+        if (part in grouped) {
+          grouped[part as keyof typeof grouped].push(item);
+        }
+      });
+    });
+
+    return grouped;
+  }, [items]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,17 +84,6 @@ export default function Home() {
   }
 
   if (!user) return null; // Will redirect
-
-  // Group items by part of day
-  const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.part_of_day]) {
-      acc[item.part_of_day] = [];
-    }
-    acc[item.part_of_day].push(item);
-    return acc;
-  }, {} as Record<string, RoutineItem[]>);
-
-  const partsOfDay = ['morning', 'afternoon', 'evening'] as const;
 
   return (
     <AuthGuard>
@@ -70,7 +105,7 @@ export default function Home() {
             </Card>
           ) : (
             <Accordion type="multiple" className="space-y-4">
-              {partsOfDay.map(part => (
+              {PARTS_OF_DAY.map(part => (
                 <AccordionItem
                   key={part}
                   value={part}

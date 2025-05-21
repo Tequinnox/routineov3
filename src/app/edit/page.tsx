@@ -5,46 +5,59 @@ import { useUser } from '@/hooks/useUser';
 import AuthGuard from '@/components/AuthGuard';
 import { createItem } from '@/services/items';
 import { useItems } from '@/hooks/useItems';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
 import { ItemForm } from '@/components/ItemForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { DndContext, DragEndEvent, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DraggableItem } from '@/components/DraggableItem';
 import { Pencil, Trash2 } from 'lucide-react';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 type DayOfWeek = typeof DAYS_OF_WEEK[number];
+type PartOfDay = 'morning' | 'afternoon' | 'evening';
 
-// Extend the RoutineItem type to include day_of_week
 type ExtendedRoutineItem = {
   id: string;
   name: string;
-  part_of_day: 'morning' | 'afternoon' | 'evening';
+  part_of_day: PartOfDay[];
   is_checked: boolean;
   day_of_week: DayOfWeek[];
+  order?: number;
+  user_id: string;
 };
 
 type GroupedItems = {
   [key in DayOfWeek]: {
-    morning: ExtendedRoutineItem[];
-    afternoon: ExtendedRoutineItem[];
-    evening: ExtendedRoutineItem[];
+    [key in PartOfDay]: ExtendedRoutineItem[];
   };
 };
 
 export default function EditPage() {
   const { user } = useUser();
-  const { items, loading: itemsLoading } = useItems(user?.uid || '', true);
+  const { items: rawItems, loading: itemsLoading } = useItems(user?.uid || '', true);
   const [name, setName] = useState('');
-  const [partOfDay, setPartOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const [partOfDay, setPartOfDay] = useState<PartOfDay[]>(['morning']);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([...DAYS_OF_WEEK]);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editPartOfDay, setEditPartOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const [editPartOfDay, setEditPartOfDay] = useState<PartOfDay[]>(['morning']);
   const [editDays, setEditDays] = useState<DayOfWeek[]>([...DAYS_OF_WEEK]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Cast items to ExtendedRoutineItem[] to ensure proper typing
+  const items = useMemo(() => rawItems as ExtendedRoutineItem[], [rawItems]);
 
   // Group items by day and part of day
   const groupedItems = useMemo(() => {
@@ -57,9 +70,19 @@ export default function EditPage() {
       }
     }), {} as GroupedItems);
 
-    (items as ExtendedRoutineItem[]).forEach(item => {
+    // Sort all items by order first
+    const sortedItems = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    sortedItems.forEach(item => {
       item.day_of_week.forEach(day => {
-        grouped[day][item.part_of_day].push(item);
+        const parts = Array.isArray(item.part_of_day)
+          ? item.part_of_day
+          : typeof item.part_of_day === 'string'
+            ? [item.part_of_day]
+            : [];
+        parts.forEach(part => {
+          grouped[day][part].push(item);
+        });
       });
     });
 
@@ -74,11 +97,14 @@ export default function EditPage() {
       setIsSubmitting(true);
       setError('');
       
+      // Calculate the next order number
+      const nextOrder = items.length;
+      
       const result = await createItem({
         name,
         part_of_day: partOfDay,
         day_of_week: selectedDays,
-        order: 0,
+        order: nextOrder, // Set the order to be the next number
         user_id: user.uid
       });
 
@@ -88,7 +114,7 @@ export default function EditPage() {
 
       // Reset form
       setName('');
-      setPartOfDay('morning');
+      setPartOfDay(['morning']);
       setSelectedDays([...DAYS_OF_WEEK]);
     } catch (err) {
       console.error('Error creating item:', err);
@@ -141,6 +167,50 @@ export default function EditPage() {
       setError(err instanceof Error ? err.message : 'Failed to delete item');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const activeItem = items.find(item => item.id === active.id);
+    const overItem = items.find(item => item.id === over.id);
+    
+    if (!activeItem || !overItem) return;
+
+    // Calculate new order
+    const oldIndex = items.findIndex(item => item.id === active.id);
+    const newIndex = items.findIndex(item => item.id === over.id);
+    
+    // Create a new array with the updated order
+    const newOrder = [...items];
+    const [movedItem] = newOrder.splice(oldIndex, 1);
+    newOrder.splice(newIndex, 0, movedItem);
+
+    // Update orders in Firestore
+    try {
+      const batch = writeBatch(db);
+      newOrder.forEach((item, index) => {
+        const itemRef = doc(db, 'items', item.id);
+        batch.update(itemRef, { order: index });
+      });
+      await batch.commit();
+
+      // Update local state immediately after successful Firestore update
+      // This ensures the UI updates right away
+      const updatedItems = newOrder.map((item, index) => ({
+        ...item,
+        order: index
+      }));
+      // Force a re-render by updating the items array
+      // Note: This assumes useItems hook exposes a way to update items
+      // If not, you might need to refetch items after the batch commit
+      items.splice(0, items.length, ...updatedItems);
+    } catch (err) {
+      console.error('Error updating item order:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update item order');
     }
   };
 
@@ -216,58 +286,44 @@ export default function EditPage() {
                                   {part} ({partItems.length})
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                  <div className="space-y-2 pt-2">
-                                    {partItems.map((item) => (
-                                      <div key={item.id}>
-                                        {editingId === item.id ? (
-                                          <ItemForm
-                                            name={editName}
-                                            setName={setEditName}
-                                            partOfDay={editPartOfDay}
-                                            setPartOfDay={setEditPartOfDay}
-                                            days={editDays}
-                                            setDays={setEditDays}
-                                            onSubmit={(e) => { e.preventDefault(); handleSave(item.id); }}
-                                            submitText="Save"
-                                            isSubmitting={isSubmitting}
-                                            defaultOpen={true}
-                                          />
-                                        ) : (
-                                          <div className="flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-md transition-shadow">
-                                            <div className="flex-1">
-                                              <div className="font-medium">{item.name}</div>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {item.day_of_week.map((d) => (
-                                                  <span key={d} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                                    {d.slice(0, 3)}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            </div>
-                                            <div className="flex gap-2 ml-4">
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleEdit(item)}
-                                                disabled={isSubmitting}
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(item.id)}
-                                                disabled={isSubmitting}
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </div>
+                                  <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                  >
+                                    <SortableContext
+                                      items={partItems.map(item => item.id)}
+                                      strategy={verticalListSortingStrategy}
+                                    >
+                                      <div className="space-y-2 pt-2">
+                                        {partItems.map((item) => (
+                                          <div key={item.id}>
+                                            {editingId === item.id ? (
+                                              <ItemForm
+                                                name={editName}
+                                                setName={setEditName}
+                                                partOfDay={editPartOfDay}
+                                                setPartOfDay={setEditPartOfDay}
+                                                days={editDays}
+                                                setDays={setEditDays}
+                                                onSubmit={(e) => { e.preventDefault(); handleSave(item.id); }}
+                                                submitText="Save"
+                                                isSubmitting={isSubmitting}
+                                                defaultOpen={true}
+                                              />
+                                            ) : (
+                                              <DraggableItem
+                                                item={item}
+                                                onEdit={handleEdit}
+                                                onDelete={handleDelete}
+                                                isSubmitting={isSubmitting}
+                                              />
+                                            )}
                                           </div>
-                                        )}
+                                        ))}
                                       </div>
-                                    ))}
-                                  </div>
+                                    </SortableContext>
+                                  </DndContext>
                                 </AccordionContent>
                               </AccordionItem>
                             );

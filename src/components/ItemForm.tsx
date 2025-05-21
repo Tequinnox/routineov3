@@ -7,15 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Check } from "lucide-react";
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 type DayOfWeek = typeof DAYS_OF_WEEK[number];
 
+type PartOfDay = 'morning' | 'afternoon' | 'evening';
+const PARTS_OF_DAY: PartOfDay[] = ['morning', 'afternoon', 'evening'];
+
 interface ItemFormProps {
   name: string;
   setName: (name: string) => void;
-  partOfDay: 'morning' | 'afternoon' | 'evening';
-  setPartOfDay: (part: 'morning' | 'afternoon' | 'evening') => void;
+  partOfDay: PartOfDay[];
+  setPartOfDay: (parts: PartOfDay[]) => void;
   days: DayOfWeek[];
   setDays: (days: DayOfWeek[]) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -52,6 +56,14 @@ export function ItemForm({
     }
   }, [days, setDays]);
 
+  const togglePartOfDay = useCallback((part: PartOfDay) => {
+    if (partOfDay.includes(part)) {
+      setPartOfDay(partOfDay.filter(p => p !== part));
+    } else {
+      setPartOfDay([...partOfDay, part].sort((a, b) => PARTS_OF_DAY.indexOf(a) - PARTS_OF_DAY.indexOf(b)));
+    }
+  }, [partOfDay, setPartOfDay]);
+
   // Split days into two rows of 4
   const firstRowDays = DAYS_OF_WEEK.slice(0, 4);
   const secondRowDays = DAYS_OF_WEEK.slice(4);
@@ -77,21 +89,25 @@ export function ItemForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="partOfDay">Part of Day</Label>
-              <Select
-                value={partOfDay}
-                onValueChange={(value) => setPartOfDay(value as 'morning' | 'afternoon' | 'evening')}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="partOfDay">
-                  <SelectValue placeholder="Select part of day" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="morning">Morning</SelectItem>
-                  <SelectItem value="afternoon">Afternoon</SelectItem>
-                  <SelectItem value="evening">Evening</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Parts of Day</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {PARTS_OF_DAY.map(part => (
+                  <Button
+                    key={part}
+                    type="button"
+                    variant={partOfDay.includes(part) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => togglePartOfDay(part)}
+                    disabled={isSubmitting}
+                    className="h-9 capitalize"
+                  >
+                    {part}
+                    {partOfDay.includes(part) && (
+                      <Check className="ml-2 h-4 w-4" />
+                    )}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">
