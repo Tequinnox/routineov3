@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
 import AuthGuard from '@/components/AuthGuard';
 import { getUserSettings, updateUserSettings } from '@/services/settings';
+import { getAuth, signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const { user } = useUser();
+  const router = useRouter();
   const [resetTime, setResetTime] = useState('06:00'); // Default to 6 AM
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Load current settings
   useEffect(() => {
@@ -45,6 +49,35 @@ export default function SettingsPage() {
       setError('Failed to save settings');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    try {
+      setIsLoggingOut(true);
+      setError('');
+      
+      // First try to sign out
+      await signOut(getAuth());
+      
+      // Clear any local storage items
+      localStorage.removeItem('routineo_last_reset');
+      
+      // Small delay to ensure Firebase has processed the sign out
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Then redirect
+      router.push('/auth');
+    } catch (err) {
+      console.error('Error logging out:', err);
+      if (err instanceof Error && err.message.includes('network')) {
+        setError('Network error during logout. Please try again.');
+      } else {
+        setError('Failed to log out. Please try again.');
+      }
+      setIsLoggingOut(false);
     }
   };
 
@@ -86,6 +119,16 @@ export default function SettingsPage() {
               {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 disabled:opacity-50"
+            >
+              {isLoggingOut ? 'Logging out...' : 'Log Out'}
+            </button>
+          </div>
         </div>
       </div>
     </AuthGuard>

@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { initializeAuth, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -17,7 +17,7 @@ console.log("Firebase Config (presence):", { hasApiKey: !!firebaseConfig.apiKey,
 // Initialize Firebase only if it hasn't been initialized already
 const app = initializeApp(firebaseConfig);
 console.log('Firebase Apps:', getApps().length);
-const auth = initializeAuth(app, { persistence: indexedDBLocalPersistence });
+const auth = initializeAuth(app, { persistence: browserLocalPersistence });
 
 const db = getFirestore(app);
 
