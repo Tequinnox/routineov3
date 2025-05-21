@@ -6,6 +6,18 @@ import AuthGuard from '@/components/AuthGuard';
 import { getUserSettings, updateUserSettings } from '@/services/settings';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
+// Generate time options in 30-minute intervals
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2);
+  const minute = i % 2 === 0 ? '00' : '30';
+  return `${hour.toString().padStart(2, '0')}:${minute}`;
+});
 
 export default function SettingsPage() {
   const { user } = useUser();
@@ -83,52 +95,85 @@ export default function SettingsPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-xl font-semibold mb-6">Settings</h1>
-          
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-              {error}
-            </div>
-          )}
+      <div className="min-h-screen bg-gray-50 pt-16 px-4">
+        <div className="max-w-md mx-auto space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {error && (
+                <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="resetTime" className="block text-sm font-medium text-gray-700">
-                Daily Reset Time
-              </label>
-              <input
-                type="time"
-                id="resetTime"
-                value={resetTime}
-                onChange={(e) => setResetTime(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Your routine items will reset at this time each day
-              </p>
-            </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="resetTime">Reset Routine At</Label>
+                  <Select
+                    value={resetTime}
+                    onValueChange={setResetTime}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger id="resetTime" className="w-full">
+                      <SelectValue placeholder="Select reset time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_OPTIONS.map(time => (
+                        <SelectItem key={time} value={time}>
+                          {new Date(`2000-01-01T${time}`).toLocaleTimeString([], { 
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true 
+                          })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    Your routine items will reset at this time each day
+                  </p>
+                </div>
 
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              {isSaving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </form>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    'Save Settings'
+                  )}
+                </Button>
+              </form>
 
-          <div className="mt-6">
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 disabled:opacity-50"
-            >
-              {isLoggingOut ? 'Logging out...' : 'Log Out'}
-            </button>
-          </div>
+              <Separator className="my-6" />
+
+              <div className="space-y-2">
+                <Label>Account</Label>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span>Logging out...</span>
+                    </div>
+                  ) : (
+                    'Log Out'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AuthGuard>
