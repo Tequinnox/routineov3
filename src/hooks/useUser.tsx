@@ -22,21 +22,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('UserProvider mounted');
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Auth state changed:', user ? 'User logged in' : 'No user');
       setUser(user);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Log initial state
+    console.log('Initial auth state:', auth.currentUser ? 'User exists' : 'No user');
+
+    return () => {
+      console.log('UserProvider cleanup');
+      unsubscribe();
+    };
   }, []);
 
+  const value = {
+    user,
+    loading,
+    isAuthenticated: !!user
+  };
+
+  console.log('UserProvider render:', { loading, hasUser: !!user });
+
   return (
-    <UserContext.Provider value={{ user, loading, isAuthenticated: !!user }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
 }
 
 export function useUser() {
-  return useContext(UserContext);
+  const context = useContext(UserContext);
+  console.log('useUser hook called:', { loading: context.loading, hasUser: !!context.user });
+  return context;
 } 

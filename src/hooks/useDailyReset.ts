@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { getUserSettings } from '@/services/settings';
 import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
+import { useItems } from '@/hooks/useItems';
 
 const LAST_RESET_KEY = 'routineo_last_reset';
 
@@ -14,6 +15,7 @@ export function useDailyReset({ userId, onReset }: UseDailyResetProps) {
   const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasCheckedRef = useRef(false);
+  const { items, loading, error: itemsError } = useItems(userId, true);
 
   useEffect(() => {
     // Skip if we've already checked or no user

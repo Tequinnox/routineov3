@@ -95,7 +95,7 @@ const ItemForm = ({
 
 export default function EditPage() {
   const { user } = useUser();
-  const { items, loading, error: itemsError } = useItems(user?.uid || '', true);
+  const { items, loading: itemsLoading } = useItems(user?.uid || '', true);
   const [name, setName] = useState('');
   const [partOfDay, setPartOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([...DAYS_OF_WEEK]);
@@ -184,7 +184,7 @@ export default function EditPage() {
     }
   };
 
-  if (loading) {
+  if (itemsLoading) {
     return (
       <AuthGuard>
         <div className="min-h-screen bg-gray-50 p-4">

@@ -1,107 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebaseClient';
-import { FirebaseError } from 'firebase/app';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider
-} from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "@/lib/firebaseClient";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [error, setError] = useState('');
+  const auth = getAuth(app);
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    console.log('Auth page mounted');
-    console.log('Auth instance:', !!auth);
-  }, []);
-
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     try {
-      console.log('Attempting auth with:', { email, isSignUp });
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      router.push('/');
-    } catch (err) {
-      console.error('Auth error:', err);
-      setError((err as FirebaseError).message);
-    }
-  };
-
-  const handleGoogleAuth = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/');
-    } catch (err) {
-      setError((err as FirebaseError).message);
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push("/"); // Redirect to home
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <h2 className="text-center text-3xl font-bold">
-          {isSignUp ? 'Create Account' : 'Sign In'}
-        </h2>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleEmailAuth} className="space-y-6">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
-          <button
-            type="submit"
-            className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {isSignUp ? 'Sign Up' : 'Sign In'}
-          </button>
-        </form>
-
-        <button
-          onClick={handleGoogleAuth}
-          className="w-full py-2 px-4 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-        >
-          Continue with Google
+    <div className="p-6">
+      <h1 className="text-xl font-semibold mb-4">Login</h1>
+      <form onSubmit={handleLogin} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+        />
+        <button type="submit" className="w-full bg-black text-white py-2 rounded">
+          Sign In
         </button>
-
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full text-sm text-blue-500 hover:text-blue-600"
-        >
-          {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
-        </button>
-      </div>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+      </form>
     </div>
   );
 } 
