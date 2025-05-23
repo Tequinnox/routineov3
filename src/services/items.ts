@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore';
+import { ExtendedRoutineItem } from '@/types/items';
 
 type PartOfDay = 'morning' | 'afternoon' | 'evening';
 
@@ -21,4 +22,18 @@ export async function createItem(item: Omit<RoutineItem, 'is_checked'>) {
     is_checked: false,
     created_at: serverTimestamp()
   });
+}
+
+export async function updateManyItemsOrder(userId: string, items: ExtendedRoutineItem[]): Promise<void> {
+  const batch = writeBatch(db);
+  
+  items.forEach((item, index) => {
+    if (item.user_id !== userId) {
+      throw new Error('Cannot update items belonging to another user');
+    }
+    const itemRef = doc(db, 'items', item.id);
+    batch.update(itemRef, { order: index });
+  });
+
+  await batch.commit();
 } 

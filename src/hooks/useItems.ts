@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
-import { RoutineItem } from '@/components/ItemCard';
+import { ExtendedRoutineItem } from '@/types/items';
 
 export function useItems(userId: string, showAllItems: boolean = false) {
-  const [items, setItems] = useState<RoutineItem[]>([]);
+  const [items, setItems] = useState<ExtendedRoutineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +26,17 @@ export function useItems(userId: string, showAllItems: boolean = false) {
         const itemsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as RoutineItem[];
-        setItems(itemsData);
+        })) as ExtendedRoutineItem[];
+        
+        // Sort items by order, with undefined orders last
+        const sortedItems = itemsData.sort((a, b) => {
+          if (a.order === undefined && b.order === undefined) return 0;
+          if (a.order === undefined) return 1;
+          if (b.order === undefined) return -1;
+          return a.order - b.order;
+        });
+        
+        setItems(sortedItems);
         setLoading(false);
       },
       (err) => {

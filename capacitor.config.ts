@@ -1,7 +1,7 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.routineo.app',
+  appId: 'com.tomquinn.routineo',
   appName: 'Routineo',
   webDir: 'out',
   plugins: {

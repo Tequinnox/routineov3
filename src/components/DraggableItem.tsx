@@ -43,17 +43,16 @@ export function DraggableItem({ item, onEdit, onDelete, isSubmitting }: Draggabl
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-md transition-shadow ${
-        isDragging ? 'cursor-grabbing' : 'cursor-grab'
-      }`}
+      className={`flex items-center justify-between p-4 bg-white rounded-lg border hover:shadow-md transition-shadow`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <button
-          className="p-1 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing"
+          className="p-2 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing touch-none"
           {...attributes}
           {...listeners}
+          aria-label="Drag to reorder"
         >
-          <GripVertical className="h-4 w-4 text-gray-400" />
+          <GripVertical className="h-6 w-6 text-gray-400" />
         </button>
         <div className="flex-1">
           <div className="font-medium">{item.name}</div>

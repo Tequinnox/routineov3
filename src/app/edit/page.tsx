@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useUser } from '@/hooks/useUser';
 import AuthGuard from '@/components/AuthGuard';
-import { createItem } from '@/services/items';
+import { createItem, updateManyItemsOrder } from '@/services/items';
 import { useItems } from '@/hooks/useItems';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
@@ -11,24 +11,15 @@ import { ItemForm } from '@/components/ItemForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { DndContext, DragEndEvent, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, DragEndEvent, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { DraggableItem } from '@/components/DraggableItem';
 import { Pencil, Trash2 } from 'lucide-react';
+import { ExtendedRoutineItem } from '@/types/items';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 type DayOfWeek = typeof DAYS_OF_WEEK[number];
 type PartOfDay = 'morning' | 'afternoon' | 'evening';
-
-type ExtendedRoutineItem = {
-  id: string;
-  name: string;
-  part_of_day: PartOfDay[];
-  is_checked: boolean;
-  day_of_week: DayOfWeek[];
-  order?: number;
-  user_id: string;
-};
 
 type GroupedItems = {
   [key in DayOfWeek]: {
@@ -50,7 +41,17 @@ export default function EditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -178,35 +179,32 @@ export default function EditPage() {
     const activeItem = items.find(item => item.id === active.id);
     const overItem = items.find(item => item.id === over.id);
     
-    if (!activeItem || !overItem) return;
+    if (!activeItem || !overItem || !user) return;
 
-    // Calculate new order
-    const oldIndex = items.findIndex(item => item.id === active.id);
-    const newIndex = items.findIndex(item => item.id === over.id);
-    
-    // Create a new array with the updated order
-    const newOrder = [...items];
-    const [movedItem] = newOrder.splice(oldIndex, 1);
-    newOrder.splice(newIndex, 0, movedItem);
+    // Get the current part of day items
+    const partItems = items.filter(item => 
+      item.part_of_day.some(part => overItem.part_of_day.includes(part)) &&
+      item.day_of_week.some(day => overItem.day_of_week.includes(day))
+    ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-    // Update orders in Firestore
+    // Find indices in the part-specific array
+    const oldIndex = partItems.findIndex(item => item.id === active.id);
+    const newIndex = partItems.findIndex(item => item.id === over.id);
+
+    // Create new array with updated order
+    const newItems = arrayMove(partItems, oldIndex, newIndex).map((item, index) => ({
+      ...item,
+      order: index
+    }));
+
     try {
-      const batch = writeBatch(db);
-      newOrder.forEach((item, index) => {
-        const itemRef = doc(db, 'items', item.id);
-        batch.update(itemRef, { order: index });
+      await updateManyItemsOrder(user.uid, newItems);
+      
+      // Update local state
+      const updatedItems = items.map(item => {
+        const updatedItem = newItems.find(newItem => newItem.id === item.id);
+        return updatedItem || item;
       });
-      await batch.commit();
-
-      // Update local state immediately after successful Firestore update
-      // This ensures the UI updates right away
-      const updatedItems = newOrder.map((item, index) => ({
-        ...item,
-        order: index
-      }));
-      // Force a re-render by updating the items array
-      // Note: This assumes useItems hook exposes a way to update items
-      // If not, you might need to refetch items after the batch commit
       items.splice(0, items.length, ...updatedItems);
     } catch (err) {
       console.error('Error updating item order:', err);
