@@ -96,14 +96,12 @@ export default function Home() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 px-4">
-        <div className="max-w-md mx-auto space-y-4">
+        <div className="max-w-md mx-auto space-y-6 pt-[calc(3rem+env(safe-area-inset-top))]">
           {itemsError && (
             <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
               {itemsError}
             </div>
           )}
-
-          <Quote />
 
           {items.length === 0 ? (
             <Card className="bg-white">
@@ -147,6 +145,8 @@ export default function Home() {
               ))}
             </Accordion>
           )}
+
+          <Quote />
         </div>
       </div>
     </AuthGuard>

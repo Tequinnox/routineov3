@@ -73,6 +73,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md px-4">
+        <img
+          src="/icons/app-icon/rivo icon v2.png"
+          alt="Rivo logo"
+          className="mx-auto mb-6 w-20 h-20 object-contain"
+        />
         <Card>
           <CardHeader>
             <CardTitle className="text-center text-2xl font-semibold">
