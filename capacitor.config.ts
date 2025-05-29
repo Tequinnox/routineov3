@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tomquinn.routineo',
-  appName: 'Routineo',
+  appName: 'Rivo',
   webDir: 'out',
   plugins: {
     SplashScreen: {

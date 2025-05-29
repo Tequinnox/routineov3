@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Routineo",
+  title: "Rivo",
   description: "Your daily routine tracker",
 }; 

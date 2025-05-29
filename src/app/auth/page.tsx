@@ -8,6 +8,8 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -70,59 +72,64 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <h2 className="text-center text-3xl font-bold">
-          {isSignUp ? 'Create Account' : 'Sign In'}
-        </h2>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+      <div className="w-full max-w-md px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-semibold">
+              {isSignUp ? 'Create Account' : 'Sign In'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleEmailAuth} className="space-y-6">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            required
-            disabled={isLoading}
-            className="w-full px-3 py-2 border rounded-lg disabled:opacity-50"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            disabled={isLoading}
-            className="w-full px-3 py-2 border rounded-lg disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {retryCount > 0 ? `Retrying... (${retryCount}/${MAX_RETRIES})` : 'Signing in...'}
-              </>
-            ) : (isSignUp ? 'Create Account' : 'Sign In')}
-          </button>
-        </form>
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                required
+                disabled={isLoading}
+                className="w-full px-3 py-2 bg-white border rounded-lg disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-black/50"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+                disabled={isLoading}
+                className="w-full px-3 py-2 bg-white border rounded-lg disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-black/50"
+              />
+              <Button
+                type="submit"
+                className="w-full bg-black text-white hover:bg-black/90"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    <span>{retryCount > 0 ? `Retrying... (${retryCount}/${MAX_RETRIES})` : 'Signing in...'}</span>
+                  </div>
+                ) : (
+                  isSignUp ? 'Create Account' : 'Sign In'
+                )}
+              </Button>
+            </form>
 
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full text-sm text-blue-500 hover:text-blue-600"
-        >
-          {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
-        </button>
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="mt-4 w-full text-sm text-black hover:text-black/80"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+            </button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
