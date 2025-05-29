@@ -25,9 +25,9 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-background`}>
         <UserProvider>
           <Header />
-          <div className="pt-[calc(3rem+env(safe-area-inset-top))] pb-16"> {/* Add padding for header and nav */}
+          <main className="flex-1 overflow-y-auto">
             {children}
-          </div>
+          </main>
           <BottomNavWrapper />
         </UserProvider>
       </body>

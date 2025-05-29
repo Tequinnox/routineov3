@@ -8,6 +8,7 @@ import { ItemCard, type RoutineItem } from '@/components/ItemCard';
 import AuthGuard from '@/components/AuthGuard';
 import { useDailyReset } from '@/hooks/useDailyReset';
 import { Card, CardContent } from '@/components/ui/card';
+import { Quote } from '@/components/Quote';
 import {
   Accordion,
   AccordionContent,
@@ -82,7 +83,7 @@ export default function Home() {
 
   if (loading || itemsLoading || isResetting) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 px-4">
+      <div className="min-h-screen bg-gray-50 px-4">
         <div className="max-w-md mx-auto flex items-center justify-center h-[calc(100vh-8rem)]">
           <div className="text-sm text-gray-500">Loading...</div>
         </div>
@@ -94,13 +95,15 @@ export default function Home() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 pt-16 px-4">
+      <div className="min-h-screen bg-gray-50 px-4">
         <div className="max-w-md mx-auto space-y-4">
           {itemsError && (
             <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
               {itemsError}
             </div>
           )}
+
+          <Quote />
 
           {items.length === 0 ? (
             <Card className="bg-white">
