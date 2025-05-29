@@ -50,7 +50,10 @@ export default function Home() {
       evening: [] as ExtendedRoutineItem[]
     };
 
-    items.forEach(item => {
+    // First sort all items by order
+    const sortedItems = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    sortedItems.forEach(item => {
       const parts = Array.isArray(item.part_of_day)
         ? item.part_of_day
         : typeof item.part_of_day === 'string'
@@ -59,7 +62,11 @@ export default function Home() {
       
       parts.forEach(part => {
         if (part in grouped) {
-          grouped[part as keyof typeof grouped].push(item);
+          // Only add to the group if it's not already there
+          // This ensures items appear in the correct order within each group
+          if (!grouped[part as keyof typeof grouped].some(existing => existing.id === item.id)) {
+            grouped[part as keyof typeof grouped].push(item);
+          }
         }
       });
     });
